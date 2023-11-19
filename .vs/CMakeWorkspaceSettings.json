@@ -1,0 +1,4 @@
+{
+  "enableCMake": true,
+  "sourceDirectory": "tasks\\task2"
+}
