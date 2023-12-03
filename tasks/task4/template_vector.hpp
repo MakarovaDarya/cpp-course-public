@@ -9,71 +9,131 @@ public:
     static const size_t empty_vector_size_ = 8;
 public:
     using iterator = Iterator<T>;
-    using value_type = /* ? */;
-    using pointer = /* ? */;
-    using reference = /* ? */;
-    using size_type = /* ? */;
+    using value_type = T;
+    using pointer = T*;
+    using reference = T&;
+    using size_type = size_t;
 
     Vector()
     {
-        throw std::runtime_error("not implemented");
+        data_ = new value_type [empty_vector_size_];
+        size_;
+        capacity_ = empty_vector_size_;
     }
 
     ~Vector()
     {
-        throw std::runtime_error("not implemented");
+        delete[] data_;
+        size_ = 0;
+        capacity_ = 0;
     }
 
     reference operator[] (size_type n) {
-        throw std::runtime_error("not implemented");
+        if (n >= size_) {
+            throw std::out_of_range("out of range");
+        }
+        else {
+            return data_[n];
+        }
+        
     }
 
     const reference operator[] (size_type n) const {
-        throw std::runtime_error("not implemented");
+        if (n >= size_) {
+            throw std::out_of_range("out of range");
+        }
+        else {
+            return data_[n];
+        }
     }
 
     void push_back(const T & value) {
-        throw std::runtime_error("not implemented");
+        if (size_ == capacity_) {
+            reserve(capacity_ * reserve_miltiply_);
+        }
+        else {
+            data_[size_] = value;
+            size_++;
+        }
+        
     }
 
     void push_back(T && value) {
-        throw std::runtime_error("not implemented");
+        if (size_ == capacity_) {
+            reserve(capacity_ * reserve_miltiply_);
+        }
+        else {
+            data_[size_] = std::move(value);
+            size_++;
+
+        }
+        
     }
 
     void pop_back() {
-        throw std::runtime_error("not implemented");
+        if (size_ <= 0) {
+            throw std::out_of_range("empty vector");
+        }
+        else {
+            size_--;
+            data_[size_] = T();
+        }
     }
 
     void clear() {
-        throw std::runtime_error("not implemented");
+        while (size_ > 0) {
+            pop_back();
+        }
     }
 
     void reserve(size_type new_size) {
-        throw std::runtime_error("not implemented");
+        if (new_size <= capacity_) {
+            return;
+        }
+        pointer new_data = new T[new_size];
+        for (size_t i = 0; i < size_; i++) {
+            new_data[i] = std::move(data_[i]);
+        }
+        delete[] data_;
+        data_ = new_data;
+        capacity_ = new_size;
     }
 
     void resize(size_type new_size) {
-        throw std::runtime_error("not implemented");
+        if (new_size < size_) {
+            for (size_t i = new_size;i < size_;i++) {
+                data_[i] = T();
+            }
+        }else if (new_size > size_) {
+            if (new_size > capacity_) {
+                reserve(new_size);
+            }
+            for (size_t i = size_;i < new_size;i++) {
+                data_[i] = T();
+            }
+        }
+        size_ = new_size;
     }
 
     iterator begin() const noexcept {
-        throw std::runtime_error("not implemented");
+        return iterator(data_);
     }
 
     iterator end() const noexcept {
-        throw std::runtime_error("not implemented");
+        return iterator(data_+size_);
     }
 
     size_type size() const noexcept {
-        throw std::runtime_error("not implemented");
+        return size_;
     }
 
     size_type capacity() const noexcept {
-        throw std::runtime_error("not implemented");
+        return capacity_;
     }
 
     bool empty() const noexcept {
-        throw std::runtime_error("not implemented");
+        if (size_ == 0) return true;
+        return false;
     }
 
 private:
