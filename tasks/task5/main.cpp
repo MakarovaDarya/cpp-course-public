@@ -14,9 +14,9 @@ void value_should_be_deleted_in_this_function(T p_value)
 {
     assert(p_value);
     if constexpr (std::is_pointer<T>::value) {
-        // что нужно сделать тут, если тип T - сырой указатель
+        delete p_value; // что нужно сделать тут, если тип T - сырой указатель
     } else {
-        // что нужно сделать тут, если тип T - умный указатель указательz
+        p.value.reset();// что нужно сделать тут, если тип T - умный указатель указательz
         assert(!p_value);
     }
 }
@@ -25,65 +25,80 @@ void value_should_be_deleted_in_this_function(T p_value)
 // подсказка: подумайте над использованием возможности создания умного указателя с помощью make... функции
 std::shared_ptr<int> function_should_return_shared_ptr_to_any_int_5_in_heap()
 {
-    static int value = 5;
-    return std::shared_ptr<int>(&value, [](int *){});
+    return std::make_shared<int>(5);
 }
 
 struct DeleterString
 {
-    // самостоятельно реализовать недостающие детали класса
+    void operator()(std::string* str) const
+    {
+        std::cout << *str << std::endl;
+        delete str;
+    }// самостоятельно реализовать недостающие детали класса
 };
 
 struct DeleterStringPtr
 {
-    // самостоятельно реализовать недостающие детали класса
+    void operator()(std::string* str_ptr) {
+        std::cout << *str_ptr << std::endl;
+        delete str_ptr;
+    }// самостоятельно реализовать недостающие детали класса
 };
 
 
 int main()
 {
 // исправить проблемы с утечной памяти
-    int* ptr = new int{20};
-    std::vector<int>* vector_ptr = new std::vector<int>();
-    for (int* i = new int{0}; *i < 20; ++(*i)) {
-        vector_ptr->push_back(*ptr * *i);
+    std::unique_ptr<int> ptr = std::make_unique<int>(20);
+    std::unique_ptr<std::vector<int>> vector_ptr = std::make_unique<std::vector<int>>();
+    for (int i = 0; i < 20; ++i) {
+        vector_ptr->push_back(*ptr * i);
     }
 
 
 // убрать проблему чтение элемента, который был удалён в векторе
-    int* ptr_to_vector_value = &(*vector_ptr)[0]; // берём указатель на 0 элемент вектора
+    std::weak_ptr<int> weak_ptr_to_vector_value = vector_ptr->size() > 0 ? std::make_shared<int>((*vector_ptr)[0]) : std::weak_ptr<int>();
+    std::shared_ptr<int> ptr_to_vector_value = weak_ptr_to_vector_value.lock();
     if (ptr_to_vector_value) {
         std::cout << "dereference [0] element of vector before clean = " << *ptr_to_vector_value << std::endl;
     }
     vector_ptr->clear();
 // этот код не должен вызываться, т.к. элемент удалён
 // сделать так, чтобы код проверил на существование элемента
-    if (ptr_to_vector_value) {
+    std::weak_ptr<int> weak_ptr_to_vector_value = vector_ptr->size() > 0 ? std::make_shared<int>((*vector_ptr)[0]) : std::weak_ptr<int>();
+    std::shared_ptr<int> ptr_to_vector_value = weak_ptr_to_vector_value.lock();
+    if (ptr_to_vector_value && vector_ptr->size() > 0) {
         std::cout << "dereference [0] element of vector after clean = " << *ptr_to_vector_value << std::endl;
     }
 
 
 // реализовать FileRaiiWrapper для управления FILE* по парадигме RAII
-    assert(FileRaiiWrapper("test_read.txt").ReadBytes(10) == "some text");
-    std::cout << FileRaiiWrapper("test_read.txt").ReadBytes(10) << std::endl;
+    FileRaiiWrapper frw("test_read.txt");
+    assert(frw.ReadBytes(10) == "some text");
+    std::cout << frw.ReadBytes(10) << std::endl;
 
 
 // сделать выделение через умный указатель
-    FileRaiiWrapper* fRaiiWrapper = nullptr;
+    std::unique_ptr<FileRaiiWrapper> fRaiiWrapper;
     try {
-        fRaiiWrapper = new FileRaiiWrapper("not_existing_filename.txt");
-    } catch (CannotOpenFileException) {
-        std::cout << "CannotOpenFileException catched" << std::endl;
+        fRaiiWrapper = std::make_unique<FileRaiiWrapper>("not_existing_filename.txt");
+    }
+    catch (CannotOpenFileException) {
+        std::cout << "CannotOpenFileException caught" << std::endl;
         assert(!fRaiiWrapper);
     }
 
 
 // записать в файл test_write.txt данные `hello text` с использованием умных указателей для выделения памяти
 // выделение памяти так и должно остаться в куче в тех местах, где оно уже есть
-    std::vector<FILE*> vector_files;
-    FILE* tmpfile = std::fopen("test_write.txt", "w");
-    vector_files.push_back(tmpfile);
-    std::fputs(new char[11]{"hello text"}, vector_files[0]); 
+    std::vector<std::unique_ptr<FILE, decltype(&std::fclose)>> vector_files;
+
+    std::unique_ptr<FILE, decltype(&std::fclose)> tmpfile(std::fopen("test_write.txt", "w"), &std::fclose);
+
+    if (tmpfile) {
+        std::fputs("hello text", tmpfile.get());
+        vector_files.push_back(std::move(tmpfile));
+    }
 
 
 // нужно внутри функции правильно удалить объект из динамической памяти
@@ -118,10 +133,10 @@ int main()
 // можно использовать класс DeleterString для строки на стеке и DeleterStringPtr для строки на куче и менять например его или использовать другие методы
 
     // во время удаления строки вывести её в cout
-    std::string* string_to_cout = new std::string{"cout this string when delete it"};
+    std::string* string_to_cout = new std::string{ "cout this string when delete it" };
 
     // во время удаления строки также вывести её в cout
-    std::string string_to_cout_too{"also cout this string when delete it"};
+    std::unique_ptr<std::string, DeleterString> string_to_cout_too(new std::string("also cout this string when delete it"));
 
     return 0;
 }
