@@ -17,6 +17,7 @@
  */
 
 #include <cmath>
+#include <string>
 #include <functional>
 #include <numeric>
 #include <vector>
@@ -44,13 +45,36 @@ public:
 
     static double integralFunction(double x) {
         // тут нужно реализовать функцию интеграла S(a, b) = (1+e^x)^0.5 dx
-        return 0;
+        return std::sqrt(1 + std::exp(x));
     }
 
 
     double calculateIntegral() {
         // в зависимости от количество потоков (tn) реализуйте подсчёт интеграла
-        return 0;
+        double h = static_cast<double>(b - a) / n;
+        double sum = 0.0;
+        std::vector<std::thread> threads(tn);
+
+        for (int i = 0; i < tn; i++) {
+            threads[i] = std::thread([this, i, h, &sum]() {
+                for (int j = i; j < n; j += tn) {
+                    double x = a + j * h;
+                    double y = integralFunction(x);
+                    if (j == 0 || j == n - 1) {
+                        sum += 0.5 * y;
+                    }
+                    else {
+                        sum += y;
+                    }
+                }
+                });
+        }
+
+        for (auto& thread : threads) {
+            thread.join();
+        }
+
+        return sum * h;
     }
 
 };
@@ -59,8 +83,15 @@ public:
 
 int main(int argc, char** argv)
 {
-    auto i = Integral(argc, argv);
-    std::cout << std::fixed << std::setprecision (4);
-    std::cout << i.calculateIntegral() << std::endl;
+    try {
+        auto i = Integral(argc, argv);
+        std::cout << std::fixed << std::setprecision(4);
+        std::cout << i.calculateIntegral() << std::endl;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
+    }
     return 0;
+    
 }
