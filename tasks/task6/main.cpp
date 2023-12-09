@@ -36,9 +36,9 @@ public:
         if (argc != 5) {
             throw std::invalid_argument("Wrong number of arguments");
         }
-        a  = std::stoi(argv[1]);
-        b  = std::stoi(argv[2]);
-        n  = std::stoi(argv[3]);
+        a = std::stoi(argv[1]);
+        b = std::stoi(argv[2]);
+        n = std::stoi(argv[3]);
         tn = std::stoi(argv[4]);
     }
 
@@ -53,20 +53,24 @@ public:
         // в зависимости от количество потоков (tn) реализуйте подсчёт интеграла
         double h = static_cast<double>(b - a) / n;
         double sum = 0.0;
+        std::vector<double> partialSums(tn);
+
         std::vector<std::thread> threads(tn);
 
         for (int i = 0; i < tn; i++) {
-            threads[i] = std::thread([this, i, h, &sum]() {
+            threads[i] = std::thread([this, i, h, &partialSums]() {
+                double partialSum = 0.0;
                 for (int j = i; j < n; j += tn) {
                     double x = a + j * h;
                     double y = integralFunction(x);
                     if (j == 0 || j == n - 1) {
-                        sum += 0.5 * y;
+                        partialSum += 0.5 * y;
                     }
                     else {
-                        sum += y;
+                        partialSum += y;
                     }
                 }
+                partialSums[i] = partialSum;
                 });
         }
 
@@ -74,8 +78,11 @@ public:
             thread.join();
         }
 
+        sum = std::accumulate(partialSums.begin(), partialSums.end(), 0.0);
+
         return sum * h;
     }
+
 
 };
 
@@ -93,5 +100,7 @@ int main(int argc, char** argv)
         return 1;
     }
     return 0;
-    
 }
+
+
+    
