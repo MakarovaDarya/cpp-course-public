@@ -26,8 +26,58 @@
 #include <algorithm>
 
 
+std::string removePunctuation(const std::string& text) {
+    std::string result;
+    for (char c : text) {
+        if (!std::ispunct(c)) {
+            result += c;
+        }
+    }
+    return result;
+}
+
+
 int main() {
-    // ваше решение
+    std::ifstream inputFile("input.txt");
+    if (!inputFile.is_open()) {
+        std::cerr << "Невозможно открыть файл" << std::endl;
+        return 1;
+    }
+    std::string line;
+    int sentenceNumber = 0;
+
+    while (std::getline(inputFile, line)) {
+        std::string cleanedLine = removePunctuation(line);
+        std::transform(cleanedLine.begin(), cleanedLine.end(), cleanedLine.begin(), ::tolower);
+
+        std::istringstream iss(cleanedLine);
+        std::map<std::string, int> wordCount;
+        std::string word;
+
+        while (iss >> word) {
+            wordCount[word]++;
+        }
+
+        std::vector<std::string> nonUniqueWords;
+        for (const auto& pair : wordCount) {
+            if (pair.second > 1) {
+                nonUniqueWords.push_back(pair.first);
+            }
+        }
+
+        if (!nonUniqueWords.empty()) {
+            std::cout << ++sentenceNumber << ": ";
+            for (size_t i = 0; i < nonUniqueWords.size(); ++i) {
+                std::cout << nonUniqueWords[i];
+                if (i != nonUniqueWords.size() - 1) {
+                    std::cout << ",";
+                }
+            }
+            std::cout << "\n";
+        }
+    }
+
+    inputFile.close();
 
     return 0;
 }
