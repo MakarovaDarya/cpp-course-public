@@ -69,13 +69,10 @@ int main() {
 
         if (!nonUniqueWords.empty()) {
             std::cout << sentenceNumber << ":";
-            auto it = nonUniqueWords.begin();
-            std::cout << *it;
-            ++it;
-            for (; it != nonUniqueWords.end(); ++it) {
-                std::cout << ", " << *it;
+            for (const auto& nonUniqueWord : nonUniqueWords) {
+                std::cout << nonUniqueWord << ",";
             }
-            std::cout << "\n";
+            std::cout << "\b \n";
         }
     }
 
