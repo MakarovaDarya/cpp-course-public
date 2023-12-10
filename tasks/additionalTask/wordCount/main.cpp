@@ -24,6 +24,8 @@
 #include <vector>
 #include <map>
 #include <algorithm>
+#include <unordered_map>
+#include <set>
 
 
 std::string removePunctuation(const std::string& text) {
@@ -44,34 +46,34 @@ int main() {
         return 1;
     }
     std::string line;
-    int sentenceNumber = 0;
+    int sentenceNumber = -1;
 
-    while (std::getline(inputFile, line)) {
+    while (std::getline(inputFile, line,'.')) {
+        ++sentenceNumber;
         std::string cleanedLine = removePunctuation(line);
         std::transform(cleanedLine.begin(), cleanedLine.end(), cleanedLine.begin(), ::tolower);
 
         std::istringstream iss(cleanedLine);
-        std::map<std::string, int> wordCount;
         std::string word;
+        std::unordered_map<std::string, int> wordCount;
+        std::set<std::string> nonUniqueWords;
 
         while (iss >> word) {
-            wordCount[word]++;
-        }
-
-        std::vector<std::string> nonUniqueWords;
-        for (const auto& pair : wordCount) {
-            if (pair.second > 1) {
-                nonUniqueWords.push_back(pair.first);
+            if (wordCount.find(word) != wordCount.end()) {
+                nonUniqueWords.insert(word);
+            }
+            else {
+                wordCount[word] = 1;
             }
         }
 
         if (!nonUniqueWords.empty()) {
-            std::cout << ++sentenceNumber << ": ";
-            for (size_t i = 0; i < nonUniqueWords.size(); ++i) {
-                std::cout << nonUniqueWords[i];
-                if (i != nonUniqueWords.size() - 1) {
-                    std::cout << ",";
-                }
+            std::cout << sentenceNumber << ":";
+            auto it = nonUniqueWords.begin();
+            std::cout << *it;
+            ++it;
+            for (; it != nonUniqueWords.end(); ++it) {
+                std::cout << ", " << *it;
             }
             std::cout << "\n";
         }
